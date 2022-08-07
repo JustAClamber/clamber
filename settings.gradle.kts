@@ -1,14 +1,31 @@
+pluginManagement {
+    includeBuild("build-logic")
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        // Register the AndroidX snapshot repository first so snapshots don't attempt (and fail)
+        // to download from the non-snapshot repositories
+        maven(url = "https://androidx.dev/snapshots/builds/8455591/artifacts/repository") {
+            content {
+                // The AndroidX snapshot repository will only have androidx artifacts, don't
+                // bother trying to find other ones
+                includeGroupByRegex("androidx\\..*")
+            }
+        }
+        google()
+        mavenCentral()
+    }
+}
+
 rootProject.name = "clamber"
-
-//为项目访问器添加了一项实验性功能，可提供类型安全并在 IDE 中启用代码完成
-//参考：https://docs.gradle.org/7.4/userguide/declaring_dependencies.html#sec:type-safe-project-accessors
-//dependencies {
-//  // type-safe alternative to project(":client")
-//  implementation projects.client
-//}
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
-enableFeaturePreview("VERSION_CATALOGS")
-
 include(
-    "app"
+    "app",
+    "libcommon"
 )

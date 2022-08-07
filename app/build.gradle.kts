@@ -1,40 +1,109 @@
-import clamber.setupAppModule
+/*
+ * Copyright 2021 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import com.clamber.apps.FlavorDimension
+import com.clamber.apps.Flavor
 
 plugins {
-    id("com.android.application")
-    id("kotlin-android")
+    id("clamber.android.application")
+    id("clamber.android.application.compose")
+    id("clamber.android.application.jacoco")
+    kotlin("kapt")
+    id("jacoco")
+    //id("dagger.hilt.android.plugin")
+    id("clamber.spotless")
+    id("clamber.firebase-perf")
 }
 
-setupAppModule {
+android {
     defaultConfig {
         applicationId = "com.clamber"
-    }
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles("proguard-rules.pro", "proguard-rules.pro")
-            signingConfig = signingConfigs["debug"]
+        versionCode = 1
+        versionName = "0.0.1" // X.Y.Z; X = Major, Y = minor, Z = Patch level
+
+        vectorDrawables {
+            useSupportLibrary = true
         }
     }
-    buildFeatures {
-        viewBinding = true
+
+    buildTypes {
+        val debug by getting {
+            applicationIdSuffix = ".debug"
+        }
+        val release by getting {
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+
+            // To publish on the Play store a private signing key is required, but to allow anyone
+            // who clones the code to sign and run the release variant, use the debug signing key.
+            // TODO: Abstract the signing configuration to a separate file to avoid hardcoding this.
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
+    // @see Flavor for more details on the app product flavors.
+    flavorDimensions += FlavorDimension.contentType.name
+    productFlavors {
+        Flavor.values().forEach {
+            create(it.name) {
+                dimension = it.dimension.name
+                if (it.applicationIdSuffix != null) {
+                    applicationIdSuffix = it.applicationIdSuffix
+                }
+            }
+        }
+    }
+
+    packagingOptions {
+        resources {
+            excludes.add("/META-INF/{AL2.0,LGPL2.1}")
+        }
+    }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
     }
 }
 
 dependencies {
-    implementation(libs.kotlinX.coroutines)
-    implementation(libs.androidX.appCompat)
-    implementation(libs.androidX.core)
-    implementation(libs.androidX.activity)
-    implementation(libs.androidX.fragment)
-    implementation(libs.androidX.constraintLayout)
-    implementation(libs.androidX.browser)
-    implementation(libs.androidX.viewPager2)
-    implementation(libs.androidX.recyclerView)
-    implementation(libs.google.material)
 
-//    testImplementation 'junit:junit:4.13.2'
-//    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-//    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+//    androidTestImplementation(libs.androidx.navigation.testing)
+//    debugImplementation(libs.androidx.compose.ui.testManifest)
+
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.compose.material3.windowSizeClass)
+    implementation(libs.androidx.window.manager)
+    implementation(libs.material3)
+    implementation(libs.androidx.profileinstaller)
+
+    implementation(libs.coil.kt)
+    implementation(libs.coil.kt.svg)
+
+//    implementation(libs.hilt.android)
+//    kapt(libs.hilt.compiler)
+//    kaptAndroidTest(libs.hilt.compiler)
+
+    // androidx.test is forcing JUnit, 4.12. This forces it to use 4.13
+    configurations.configureEach {
+        resolutionStrategy {
+            force(libs.junit4)
+            // Temporary workaround for https://issuetracker.google.com/174733673
+            force("org.objenesis:objenesis:2.6")
+        }
+    }
 }
